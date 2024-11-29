@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 
 import venderosRoutes from  "./routes/venderos.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import PaymentRoutes from "./routes/payment.reutes.js";
 import { FRONTEND_URL } from "./config.js";
 
 
@@ -24,6 +25,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api", venderosRoutes);
+app.use("/api", PaymentRoutes);
 
 if (process.env.NODE_ENV === "production") {
   const path = await import("path");

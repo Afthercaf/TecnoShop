@@ -25,7 +25,8 @@ const ProductDetails = () => {
   const [step, setStep] = useState(1);
   const [address, setAddress] = useState('');
   const [deliveryDay, setDeliveryDay] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Tarjeta de Crédito');
+  const [paymentMethod, setPaymentMethod] = useState('tarjeta');
+
 
   useEffect(() => {
     if (!product) {
@@ -136,146 +137,81 @@ const ProductDetails = () => {
       </div>
     ));
   };
-
-  const handleConfirmPurchase = async () => {
-    try {
-      const pedidoData = {
-        productos: [
-          {
-            productoId: product._id,
-            cantidad: quantity,
-          }
-        ],
-        metodoPago: paymentMethod,
-      };
-  
-      // Realizar la petición al servidor
-      const response = await axios.post('/pedidos', pedidoData, {
-        withCredentials: true, // Enviar cookies, como el token, si es necesario
-      });
-  
-      // Manejar la respuesta del servidor
-      if (response.data.compra) {
-        alert('Compra confirmada. ID del pedido: ' + response.data.compra._id);
-      } else {
-        alert('Error al confirmar la compra.');
-      }
-    } catch (error) {
-      console.error("Error al confirmar la compra:", error);
-      alert('Ocurrió un error al confirmar la compra.');
-    } finally {
-      setShowPurchaseModal(false);
-    }
-  }  
-
-
-
+  const handleConfirmPurchase = () => {
+    navigate('/Payments', { 
+      state: { 
+        product: product, 
+        quantity: quantity 
+      } 
+    });
+  };
 
   const handleNextStep = () => setStep((prevStep) => prevStep + 1);
   const handlePreviousStep = () => setStep((prevStep) => prevStep - 1);
   const handleCloseModal = () => setShowPurchaseModal(false);
 
-  const PurchaseModal = ({}) => (
+  const PurchaseModal = () => (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 m-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">Detalles de compra</h2>
-          <button onClick={() => setShowPurchaseModal(false)} className="text-gray-500 hover:text-gray-700">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
         {step === 1 && (
-          <div className="space-y-4">
+          <>
+            <h2 className="text-2xl font-semibold mb-4">Método de pago</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dirección de entrega</label>
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Ingresa tu dirección"
-              />
-            </div>
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <p className="text-sm text-purple-800">
-                <span className="font-semibold">Fecha de entrega estimada:</span> {deliveryDay}
-              </p>
+              <label className="block mb-2 text-gray-700">
+                Selecciona un método de pago:
+              </label>
+              <select
+  value={paymentMethod}
+  onChange={(e) => setPaymentMethod(e.target.value)}
+  className="w-full border border-gray-300 rounded-md p-2"
+>
+  <option value="tarjeta">Tarjeta</option>
+  <option value="PayPal">PayPal</option>
+  <option value="Transferencia Bancaria">Transferencia Bancaria</option>
+  <option value="efectivo">Efectivo</option>
+</select>
+
+
             </div>
             <button
-              onClick={() => setStep(2)}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors"
+              onClick={handleNextStep}
+              className="bg-blue-600 text-white py-2 px-4 mt-4 rounded-md"
             >
               Continuar
             </button>
-          </div>
+          </>
         )}
-
         {step === 2 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Método de pago</label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-                <option value="PayPal">PayPal</option>
-              </select>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setStep(1)}
-                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Volver
-              </button>
-              <button
-                onClick={() => setStep(3)}
-                className="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Continuar
-              </button>
-            </div>
-          </div>
+          <>
+            <h2 className="text-2xl font-semibold mb-4">Confirmar compra</h2>
+            <p className="mb-4">
+              Estás a punto de comprar <strong>{quantity}</strong> de{' '}
+              <strong>{product.nombre}</strong>.
+            </p>
+            <p className="mb-4">Precio total: ${quantity * product.precio}</p>
+            <button
+              onClick={handleConfirmPurchase}
+              className="bg-green-600 text-white py-2 px-4 rounded-md"
+            >
+              Confirmar
+            </button>
+            <button
+              onClick={handlePreviousStep}
+              className="bg-gray-300 text-gray-700 py-2 px-4 rounded-md mt-2"
+            >
+              Volver
+            </button>
+          </>
         )}
-
-        {step === 3 && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">Producto:</span> {product.nombre}
-              </p>
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">Dirección:</span> {address}
-              </p>
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">Método de pago:</span> {paymentMethod}
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setStep(2)}
-                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Volver
-              </button>
-              <button
-                onClick={handleConfirmPurchase}
-                className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Confirmar compra
-              </button>
-            </div>
-          </div>
-        )}
+        <button
+          onClick={handleCloseModal}
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+        >
+          ✕
+        </button>
       </div>
     </div>
   );
-
 
   return (
     <div className="min-h-screen bg-gray-50">

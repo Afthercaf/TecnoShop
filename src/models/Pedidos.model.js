@@ -36,7 +36,7 @@ const compraSchema = new mongoose.Schema(
     ],
     metodoPago: {
       type: String,
-      enum: ["tarjeta", "PayPal", "transferencia", "efectivo"],
+      enum: ["tarjeta", "PayPal", "transferencia", "efectivo, Tarjeta de Crédito"],
       required: true,
     },
     estado: {

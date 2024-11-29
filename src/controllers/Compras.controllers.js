@@ -3,6 +3,10 @@ import { Compra } from "../models/Pedidos.model.js";
 import jwt from "jsonwebtoken";
 import { Producto } from '../models/Productos.model.js';
 import { User } from "../models/user.model.js";
+import Stripe from "stripe";
+
+const stripe = new Stripe("sk_test_51QNkz6AU7UFoerJEsN0iQuUgdpbai2Tu3r0r7eyZatSZR6NhHKUGwZGQpN8lUfu54OqqB4WBXNQCbjyQ96roTyCh00fPo6Ahty");
+
 
 export const actualizarPedido = async (req, res) => {
   try {
@@ -159,33 +163,15 @@ export const obtenerPedidosPorUsuarioOTienda = async (req, res) => {
   }
 };
 
-
 export const registrarPedido = async (req, res) => {
   try {
-    // Obtener y verificar el token
     const { token } = req.cookies;
-    if (!token) {
-      return res.status(401).json({ message: "Token no proporcionado" });
-    }
+    if (!token) return res.status(401).json({ message: "Token no proporcionado." });
 
-    // Decodificar el token para obtener el usuarioId
-    const decodedToken = jwt.verify(token, TOKEN_SECRET);
+    const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET);
     const usuarioId = decodedToken.id;
 
-    // Buscar los datos del usuario con el usuarioId obtenido del token
-    const usuario = await User.findById(usuarioId);
-    if (!usuario) {
-      return res.status(404).json({ message: "Usuario no encontrado." });
-    }
-
-    // Obtener productos y método de pago de la solicitud
-    const { productos, metodoPago } = req.body;
-
-    // Usar la dirección del usuario (si existe) o la dirección enviada en la solicitud
-    const direccionEnvio = usuario.direccion || req.body.direccionEnvio;
-    if (!direccionEnvio) {
-      return res.status(400).json({ message: "Dirección de envío requerida." });
-    }
+    const { productos, metodoPago, paymentDetails, direccionEnvio } = req.body;
 
     if (!productos || productos.length === 0) {
       return res.status(400).json({ message: "No se enviaron productos para la compra." });
@@ -194,29 +180,24 @@ export const registrarPedido = async (req, res) => {
     let totalCompra = 0;
     const productosCompra = [];
 
-    // Validar y preparar los datos de cada producto
     for (const item of productos) {
       const producto = await Producto.findById(item.productoId);
       if (!producto) {
         return res.status(404).json({ message: `Producto con ID ${item.productoId} no existe.` });
       }
 
-      // Verificar stock disponible
       if (producto.cantidad < item.cantidad) {
         return res.status(400).json({
-          message: `Stock insuficiente para el producto "${producto.nombre}". Disponibles: ${producto.cantidad}.`,
+          message: `Stock insuficiente para "${producto.nombre}". Disponibles: ${producto.cantidad}.`,
         });
       }
 
-      // Reducir el stock del producto
       producto.cantidad -= item.cantidad;
       await producto.save();
 
-      // Calcular subtotal y acumular total
       const subtotal = producto.precio * item.cantidad;
       totalCompra += subtotal;
 
-      // Agregar producto procesado al arreglo de productos
       productosCompra.push({
         productoId: producto._id,
         tiendaId: producto.tiendaId,
@@ -226,16 +207,44 @@ export const registrarPedido = async (req, res) => {
       });
     }
 
-    // Crear el documento de compra
+    let paymentIntent;
+    if (metodoPago === "tarjeta") {
+      const vendedor = await Tienda.findById(productosCompra[0].tiendaId);
+      if (!vendedor || !vendedor.stripeFinancialAccountId) {
+        return res.status(400).json({
+          message: "La tienda no tiene una cuenta financiera configurada.",
+        });
+      }
+
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(totalCompra * 100),
+        currency: "mxn",
+        payment_method: paymentDetails.paymentMethodId,
+        confirm: true,
+        transfer_data: {
+          destination: vendedor.stripeFinancialAccountId,
+        },
+        metadata: {
+          usuarioId,
+          direccionEnvio,
+          totalCompra,
+        },
+      });
+
+      if (paymentIntent.status !== "succeeded") {
+        return res.status(400).json({ message: "El pago no se pudo completar." });
+      }
+    }
+
     const nuevaCompra = new Compra({
       usuarioId,
       productos: productosCompra,
       metodoPago,
       direccionEnvio,
       totalCompra,
+      paymentIntentId: metodoPago === "tarjeta" ? paymentIntent.id : null,
     });
 
-    // Guardar la compra en la base de datos
     const compraGuardada = await nuevaCompra.save();
 
     res.status(201).json({
@@ -243,10 +252,7 @@ export const registrarPedido = async (req, res) => {
       compra: compraGuardada,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Error al realizar la compra.",
-      error: error.message,
-    });
+    console.error("Error en registrarPedido:", error);
+    res.status(500).json({ message: "Error al realizar la compra.", error: error.message });
   }
 };

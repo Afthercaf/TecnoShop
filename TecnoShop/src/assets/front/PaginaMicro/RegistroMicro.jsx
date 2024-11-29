@@ -13,8 +13,9 @@ export default function RegistroMicro() {
   const [descripcion, setDescripcion] = useState("");
   const [logoURL, setLogoURL] = useState("");
   const [direccion, setDireccion] = useState("");
-  const [telefono, setTelefono] = useState(""); // Retain telefono field
+  const [telefono, setTelefono] = useState("");
   const [errors, setErrors] = useState([]);
+  const [onboardingLink, setOnboardingLink] = useState(null);
   const navigate = useNavigate();
   const { registerTienda } = useTienda();
 
@@ -45,12 +46,18 @@ export default function RegistroMicro() {
       descripcion,
       logo: logoURL,
       direccion,
-      telefono, // Include telefono in tiendaData
+      telefono,
     };
 
     try {
-      await registerTienda(tiendaData);
-      navigate("/login-vendor");
+      const response = await registerTienda(tiendaData);
+      
+      // Check if onboarding link is returned
+      if (response.onboardingLink) {
+        setOnboardingLink(response.onboardingLink);
+      } else {
+        navigate("/login-vendor");
+      }
     } catch (error) {
       setLoading(false);
       setErrors(["Error al registrar la tienda. Por favor verifica los datos."]);
@@ -60,6 +67,12 @@ export default function RegistroMicro() {
 
   const redirectToLogin = () => {
     navigate("/login-vendor");
+  };
+
+  const handleOnboarding = () => {
+    if (onboardingLink) {
+      window.location.href = onboardingLink;
+    }
   };
 
   return (
@@ -75,32 +88,59 @@ export default function RegistroMicro() {
         <div className="w-1/2 p-8">
           <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">TecnoShop</h1>
           <h3 className="text-lg font-medium text-center text-gray-600 mb-6">Crea tu cuenta de vendedor ahora</h3>
-          <form onSubmit={handleSubmit}>
-            <input type="text" placeholder="Nombre de Empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
-            <input type="email" placeholder="Correo Electrónico" value={email} onChange={(e) => setEmail(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
-            <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
-            <input type="password" placeholder="Confirmar Contraseña" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
-            <input type="text" placeholder="Descripción" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
-            <input type="text" placeholder="URL del Logo" value={logoURL} onChange={(e) => setLogoURL(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" />
-            <input type="text" placeholder="Dirección" value={direccion} onChange={(e) => setDireccion(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
-            <input type="text" placeholder="Teléfono" value={telefono} onChange={(e) => setTelefono(e.target.value)} className="mb-6 w-full px-4 py-2 border rounded-lg" required />
-            {errors.length > 0 && (
-              <div className="mb-4 text-red-500 text-center">
-                {errors.map((error, index) => (
-                  <p key={index}>{error}</p>
-                ))}
+          
+          {onboardingLink ? (
+            <div className="text-center">
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+                <p className="font-bold">Confirmación de Método de Pago</p>
+                <p>Por favor, completa tu registro de pago. Tienes 10 minutos para confirmar.</p>
+                <p className="mt-2 text-sm">Después de hacer clic, serás redirigido a Stripe para configurar tus métodos de pago.</p>
               </div>
-            )}
-            <button type="submit" disabled={loading} className="w-full bg-black text-white py-3 rounded-lg font-semibold">
-              {loading ? "Procesando..." : "Crear cuenta"}
-            </button>
-            <div className="text-center text-gray-600 mt-4">
-              ¿Ya tienes cuenta?{" "}
-              <button onClick={redirectToLogin} className="text-black font-semibold hover:underline">
-                Inicia sesión ahora
+              <button 
+                onClick={handleOnboarding}
+                className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition duration-300"
+              >
+                Confirmar Método de Pago
               </button>
             </div>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <input type="text" placeholder="Nombre de Empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
+              <input type="email" placeholder="Correo Electrónico" value={email} onChange={(e) => setEmail(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
+              <input type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
+              <input type="password" placeholder="Confirmar Contraseña" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
+              <input type="text" placeholder="Descripción" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
+              <input type="text" placeholder="URL del Logo" value={logoURL} onChange={(e) => setLogoURL(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" />
+              <input type="text" placeholder="Dirección" value={direccion} onChange={(e) => setDireccion(e.target.value)} className="mb-4 w-full px-4 py-2 border rounded-lg" required />
+              <input type="text" placeholder="Teléfono" value={telefono} onChange={(e) => setTelefono(e.target.value)} className="mb-6 w-full px-4 py-2 border rounded-lg" required />
+              
+              {errors.length > 0 && (
+                <div className="mb-4 text-red-500 text-center">
+                  {errors.map((error, index) => (
+                    <p key={index}>{error}</p>
+                  ))}
+                </div>
+              )}
+              
+              <button 
+                type="submit" 
+                disabled={loading} 
+                className="w-full bg-black text-white py-3 rounded-lg font-semibold"
+              >
+                {loading ? "Procesando..." : "Crear cuenta"}
+              </button>
+              
+              <div className="text-center text-gray-600 mt-4">
+                ¿Ya tienes cuenta?{" "}
+                <button 
+                  onClick={redirectToLogin} 
+                  className="text-black font-semibold hover:underline"
+                >
+                  Inicia sesión ahora
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </section>

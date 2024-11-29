@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { TOKEN_SECRET } from "../config.js";
 import { createAccessToken } from "../libs/jwt.js";
+import Stripe from "stripe";
 
 
 export const obtenerTiendas = async (req, res) => {
@@ -27,21 +28,26 @@ export const obtenerTienda = async (req, res) => {
 };
 
 
+
+
+
+const stripe = new Stripe("sk_test_51QNkz6AU7UFoerJEsN0iQuUgdpbai2Tu3r0r7eyZatSZR6NhHKUGwZGQpN8lUfu54OqqB4WBXNQCbjyQ96roTyCh00fPo6Ahty");
+
 export const registerTienda = async (req, res) => {
   try {
-    const { nombre, email, password, logo, telefono, direccion } = req.body;
+    const { nombre, email, password, logo, telefono, direccion, bankAccount, card } = req.body;
 
     // Verifica el token de usuario y extrae el user.id como propietarioId
     const { token } = req.cookies;
     if (!token) return res.status(401).json({ message: "Autenticación de usuario requerida" });
 
     const decoded = jwt.verify(token, TOKEN_SECRET);
-    const propietarioId = decoded.id;  // Obtenemos el user.id del token de usuario
+    const propietarioId = decoded.id; // Obtenemos el user.id del token de usuario
 
     // Verificamos si el email ya está en uso para otra tienda
     const tiendaExistente = await Tienda.findOne({ email });
     if (tiendaExistente) {
-      return res.status(400).json({ message: ["El email ya está en uso"] });
+      return res.status(400).json({ message: "El email ya está en uso" });
     }
 
     // Hasheamos la contraseña de la tienda
@@ -61,6 +67,64 @@ export const registerTienda = async (req, res) => {
     // Guardamos la tienda en la base de datos
     const tiendaGuardada = await nuevaTienda.save();
 
+    // Crea la cuenta de Stripe para el vendedor
+    const account = await stripe.accounts.create({
+      type: "standard", // Cambia a "express" si deseas usar cuentas express
+      country: "MX",    // Configurado para México
+      email: tiendaGuardada.email,
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+    });
+
+    if (bankAccount) {
+      // Si estás en modo de prueba, usa un CLABE de prueba
+      const testClabe = "000000001234567897";
+    
+      await stripe.accounts.update(account.id, {
+        external_account: {
+          object: "bank_account",
+          country: "MX",               // Configurado para México
+          currency: "mxn",             // Peso mexicano
+          account_number: process.env.NODE_ENV === "test" ? testClabe : bankAccount.clabe, // Usa el CLABE de prueba en modo test
+        },
+      });
+    }
+    
+    
+
+    // Agrega tarjeta de débito/crédito si se proporciona
+    if (card) {
+      await stripe.accounts.createExternalAccount(account.id, {
+        external_account: {
+          object: "card",
+          number: card.number,
+          exp_month: card.exp_month,
+          exp_year: card.exp_year,
+          cvc: card.cvc,
+        },
+      });
+    }
+
+    // Guarda el Stripe Account ID en la tienda
+    tiendaGuardada.stripeAccountId = account.id;
+    await tiendaGuardada.save();
+
+    // Genera un enlace de onboarding
+// Genera un enlace de onboarding
+const accountLink = await stripe.accountLinks.create({
+  account: account.id,
+  refresh_url: "http://localhost:5173/reintentar", // Cambia al puerto que uses para tu frontend
+  return_url: "http://localhost:5173/exito",      // Cambia al puerto que uses para tu frontend
+  type: "account_onboarding",
+});
+
+// Actualiza el registro de la tienda con el enlace de onboarding
+tiendaGuardada.onboardingLink = accountLink.url;
+await tiendaGuardada.save(); // Guarda los cambios en la base de datos
+
+
     // Creamos el tiendaToken
     const tiendaToken = await createAccessToken({ id: tiendaGuardada._id });
 
@@ -76,23 +140,25 @@ export const registerTienda = async (req, res) => {
       { tipo: "vendedor" },
       { new: true }
     );
-    
 
-    // Respondemos con los datos de la tienda y el usuario actualizado
+    // Respondemos con los datos de la tienda y el enlace de onboarding
     res.json({
       id: tiendaGuardada._id,
       nombre: tiendaGuardada.nombre,
       email: tiendaGuardada.email,
       propietarioId: tiendaGuardada.propietarioId,
+      stripeAccountId: tiendaGuardada.stripeAccountId,
+      onboardingLink: tiendaGuardada.onboardingLink, // Devuelve el enlace guardado
       usuario: {
         id: usuarioActualizado._id,
         username: usuarioActualizado.username,
         email: usuarioActualizado.email,
         tipo: usuarioActualizado.tipo,
       },
-    });
+    });    
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error en el registro de tienda:", error);
+    res.status(500).json({ message: "Error al registrar la tienda" });
   }
 };
 

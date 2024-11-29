@@ -35,6 +35,14 @@ const tiendaSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
+  },  
+  stripeAccountId: {
+    type: String,
+    trim: true,
+  },
+  onboardingLink: {
+    type: String,
+    trim: true
   },
   direccion: {
     type: String,

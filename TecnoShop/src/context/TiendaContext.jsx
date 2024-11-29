@@ -33,6 +33,7 @@ export const TiendaProvider = ({ children }) => {
       const res = await registerTiendaRequest(tiendaData);
       if (res.status === 200) {
         setTienda(res.data);
+        console.log(res.data)
         setIsAuthenticated(true);
       }
     } catch (error) {

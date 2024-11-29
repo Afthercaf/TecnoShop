@@ -37,8 +37,8 @@ export const registerTiendaSchema = z.object({
   direccion: z.string().nonempty("La dirección es requerida"),
   logo: z.string().url("El logo debe ser una URL válida"),
   email: z.string().email("El email no es válido"), // Email obligatorio para validación
-  telefono: z.string().min(10, "El teléfono es requerido"), // Teléfono obligatorio
-  descripcion: z.string().min(10, "La descripción debe tener al menos 10 caracteres").optional(),
+  telefono: z.string().min(1, "El teléfono es requerido"), // Teléfono obligatorio
+  descripcion: z.string().min(1, "La descripción debe tener al menos 10 caracteres").optional(),
   redesSociales: z.object({
     facebook: z.string().url().optional(),
     instagram: z.string().url().optional(),

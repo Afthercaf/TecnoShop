@@ -32,11 +32,6 @@ export default function Sidebar() {
               </Link>
             </li>
             <li>
-              <Link to="/admin-dashboard/purchases" className="flex items-center space-x-3 text-lg hover:text-gray-300">
-                <span>Compras Realizadas</span>
-              </Link>
-            </li>
-            <li>
               <Link to="/admin-dashboard/store" className="flex items-center space-x-3 text-lg hover:text-gray-300">
                 <span>Configuración de la Tienda</span>
               </Link>

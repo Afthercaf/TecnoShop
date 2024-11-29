@@ -53,6 +53,10 @@ const productoSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
+  ofertas: {
+    type: String,
+    trim: true
+  },
   estado: {
     type: String,
     enum: ["activo", "inactivo", "agotado"],

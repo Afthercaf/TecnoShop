@@ -28,6 +28,12 @@ import { ProductProvider } from "../../context/ProductContext";
 import { UserProvider } from "../../context/UserContext";
 import { TiendaProvider } from "../../context/TiendaContext";
 import {CartProvider, Cart } from "../../assets/front/UserComponents/CartPage";
+import PaymentPage from "../../paymant";
+
+import ReintentarOnboarding from "../../reintentar";
+import ExitoOnboarding from "../../exito";
+
+
 function App() {
   const [cart, setCart] = useState([]); // Estado del carrito
 
@@ -45,12 +51,17 @@ function App() {
           <Route path="/LoginUsuarios" element={<LoginUsuarios />} />
           <Route path="/login-vendor" element={<LoginMicro />} />
           <Route path="/registro-micro" element={<RegistroMicro />} />
+
+          <Route path="/reintentar" element={<ReintentarOnboarding />} />
+          <Route path="/exito" element={<ExitoOnboarding />} />
+
           <Route path="/login-superadmin" element={<LoginSuperAdmin />} />
 
           {/* Rutas del usuario con layout */}
           <Route element={<UserLayout />}>
             <Route path="/" element={<UserPage cart={cart} setCart={setCart} />} />
             <Route path="/user-compra" element={<UserCompra />} />
+            <Route path="/Payments" element={<PaymentPage />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/user-profile" element={<UserProfile />} />
             <Route path="/user-orders" element={<UserOrders />} />
