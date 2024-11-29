@@ -6,9 +6,14 @@ import axios from "../../../api/axios";
 import { useAuthUser } from '../../../context/authContext';
 import { useUsers } from '../../../context/UserContext';
 import { FaTrash, FaMinus, FaPlus, FaShoppingCart, FaGift, FaTruck } from 'react-icons/fa';
+import dotenv from 'dotenv';
+dotenv.config();
+
 
 // Stripe configuration
-const stripePromise = loadStripe('pk_test_51QNkz6AU7UFoerJE6cqMZvZz5Q9JE8XtMbcLzhRkBWxZWQKSar7BTGHS7ejnhRmOm75i5EwC2JlrjklgndhwiCZg00ParyAtga');
+const stripekey =  process.env.STRIPE_SECRET_KEY_Front;
+
+const stripePromise = loadStripe(stripekey);
 
 const CartContext = createContext();
 

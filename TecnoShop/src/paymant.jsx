@@ -5,8 +5,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthUser } from './context/authContext';
 import { useUsers } from './context/UserContext';
 import axios from "./api/axios";
+import dotenv from 'dotenv';
+dotenv.config();
+const stripekey = process.env.STRIPE_SECRET_KEY_Front
 
-const stripePromise = loadStripe('pk_test_51QNkz6AU7UFoerJE6cqMZvZz5Q9JE8XtMbcLzhRkBWxZWQKSar7BTGHS7ejnhRmOm75i5EwC2JlrjklgndhwiCZg00ParyAtga');
+const stripePromise = loadStripe(stripekey);
 
 const PaginaDePago = () => {
   const location = useLocation();

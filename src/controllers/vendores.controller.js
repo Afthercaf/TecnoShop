@@ -3,7 +3,8 @@ import { User } from "../models/user.model.js";
 import { Producto } from "../models/Productos.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { TOKEN_SECRET } from "../config.js";
+import { TOKEN_SECRET, STRIPE_SECRET_KEY } from "../config.js";
+
 import { createAccessToken } from "../libs/jwt.js";
 import Stripe from "stripe";
 
@@ -28,11 +29,7 @@ export const obtenerTienda = async (req, res) => {
 };
 
 
-
-
-
-const stripe = new Stripe("sk_test_51QNkz6AU7UFoerJEsN0iQuUgdpbai2Tu3r0r7eyZatSZR6NhHKUGwZGQpN8lUfu54OqqB4WBXNQCbjyQ96roTyCh00fPo6Ahty");
-
+const stripe = new Stripe(STRIPE_SECRET_KEY);
 export const registerTienda = async (req, res) => {
   try {
     const { nombre, email, password, logo, telefono, direccion, bankAccount, card } = req.body;
